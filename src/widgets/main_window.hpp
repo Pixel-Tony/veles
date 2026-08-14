@@ -6,6 +6,9 @@
 
 namespace veles
 {
+class palette_tab;
+class palette_action;
+
 class main_window : public QMainWindow
 {
     Q_OBJECT
@@ -15,6 +18,10 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *_ev) override;
+private:
+    palette_tab *palette_tab_;
+
+    palette_action *palette_action_;
 };
 } // namespace veles
 

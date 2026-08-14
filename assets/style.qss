@@ -1,0 +1,9 @@
+veles--palette_tab QLabel {
+    color: #bbb;
+    font-family: monospace;
+    qproperty-alignment: AlignCenter;
+}
+
+veles--palette_tab QLabel#groupLabel {
+    qproperty-alignment: AlignLeft;
+}
