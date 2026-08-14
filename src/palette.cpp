@@ -75,6 +75,15 @@ const palette *palette::make(palette::type _type)
     return palettes[_type];
 }
 
+const palette *palette::find(const QList<QRgb> &_color_table)
+{
+    if (_color_table == (*p_dos)->contents_)
+        return *p_dos;
+    if (_color_table == (*p_win)->contents_)
+        return *p_win;
+    return nullptr;
+}
+
 uint palette::index(QColor _color) const noexcept { return colors_.value(_color, -1); }
 
 const QString &palette::color_group(QColor _color) const noexcept

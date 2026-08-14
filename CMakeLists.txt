@@ -6,7 +6,7 @@ project(veles
 set(CMAKE_AUTOMOC ON)
 set(CXX_INCLUDE_WHAT_YOU_USE "include-what-you-use")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGLWidgets)
 
 qt_standard_project_setup()
 qt_add_executable(veles-executable
@@ -17,6 +17,14 @@ qt_add_executable(veles-executable
   src/palette.hpp
   src/state.cpp
   src/state.hpp
+  src/widgets/canvas.cpp
+  src/widgets/canvas.hpp
+  src/widgets/create_file_dialog.cpp
+  src/widgets/create_file_dialog.hpp
+  src/widgets/editor.cpp
+  src/widgets/editor.hpp
+  src/widgets/image.cpp
+  src/widgets/image.hpp
   src/widgets/main_window.cpp
   src/widgets/main_window.hpp
   src/widgets/palette_tab.cpp
@@ -47,7 +55,7 @@ set_target_properties(veles-executable PROPERTIES
 )
 
 target_include_directories(veles-executable PRIVATE src)
-target_link_libraries(veles-executable PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+target_link_libraries(veles-executable PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGLWidgets)
 
 target_compile_options(veles-executable
   PRIVATE $<$<STREQUAL:CMAKE_CXX_COMPILER_ID,MSVC>:"/W4 /WX /permissive-">

@@ -48,6 +48,9 @@ int veles_main(int _argc, char **_argv)
     state_->set_primary(Qt::white);
     state_->set_secondary(Qt::blue);
 
+    for (const auto &arg : QApplication::arguments())
+        if (!arg.endsWith("veles"))
+            win.try_open_image(arg);
     win.showMaximized();
 
     return QApplication::exec();

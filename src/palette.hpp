@@ -26,6 +26,7 @@ private:
 
 public:
     static const palette *make(type _type);
+    static const palette *find(const QList<QRgb> &_color_table);
 
     [[nodiscard]] uint index(QColor _color) const noexcept;
     [[nodiscard]] const QString &color_group(QColor _color) const noexcept;
