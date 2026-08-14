@@ -1,0 +1,46 @@
+{
+    "Transparent blue": [
+        "0x00",
+        "0x00"
+    ],
+    "WinAPI (Do not use)": [
+        "0x01",
+        "0x09"
+    ],
+    "Company colors #2": [
+        "0x50",
+        "0x57"
+    ],
+    "Company colors #1": [
+        "0xC6",
+        "0xCD"
+    ],
+    "Water cycle": [
+        "0xD9",
+        "0xE2"
+    ],
+    "Block cycle": [
+        "0xE3",
+        "0xE7"
+    ],
+    "Fire cycle": [
+        "0xE8",
+        "0xEE"
+    ],
+    "Red cycle": [
+        "0xEF",
+        "0xF0"
+    ],
+    "Yellow flash": [
+        "0xF1",
+        "0xF4"
+    ],
+    "API (Do not use)": [
+        "0xF6",
+        "0xFE"
+    ],
+    "Pure white": [
+        "0xFF",
+        "0xFF"
+    ]
+}

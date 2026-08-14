@@ -1,0 +1,8 @@
+# build files
+build
+
+# IDE files
+.vscode
+.idea
+.cache
+*.code-workspace
