@@ -11,7 +11,9 @@ struct tool
 {
     enum class type
     {
-        view
+        view,
+        pen,
+        color_picker
     };
 
     static tool *current;

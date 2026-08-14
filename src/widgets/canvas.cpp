@@ -1,8 +1,21 @@
 #include "canvas.hpp"
 
 #include "create_file_dialog.hpp"
+#include "dialogs.hpp"
 #include "editor.hpp"
 #include "moc_canvas.cpp"
+#include "unsaved_file_dialog.hpp"
+
+#include <QDir>
+#include <QFileDialog>
+#include <QSettings>
+#include <QUndoStack>
+
+namespace
+{
+const auto err_could_not_save = "Could not save the image.";
+const auto err_file_already_open = "File is already open in the editor.";
+} // namespace
 
 #include <QMessageBox>
 
@@ -28,7 +41,7 @@ canvas::canvas(QWidget *_parent) : QTabWidget(_parent)
             if (!_ed)
                 return;
             const auto i = currentIndex();
-            setTabText(i, _ed->name());
+            setTabText(i, _ed->name() + "* "[_ed->history()->isClean()]);
             setTabToolTip(i, _ed->path());
         });
     connect(this, &QTabWidget::currentChanged, [this] { emit changed(current_editor()); });
@@ -61,12 +74,75 @@ void canvas::open_image(const QString &_filepath)
     }
 }
 
-void canvas::close_image() { close_editor(*current_editor()); }
+void canvas::save()
+{
+    auto &ed = *current_editor();
+    if (ed.history()->isClean() && ed.exists())
+        return;
+    if (!ed.exists())
+        save_as(&ed);
+    else if (!ed.save())
+        show_error(err_could_not_save);
+}
 
-void canvas::exit()
+void canvas::save_as(editor *_ed)
+{
+    if (!_ed)
+        _ed = current_editor();
+    const auto &path = _ed->path();
+    QString dir = path.isEmpty() ? QSettings().value("canvas/saveAs/directory", QDir::homePath()).toString() : path;
+    dir += "/" + _ed->name();
+
+    auto *const dialog = create_save_file_dialog(dir, this);
+    connect(dialog, &QFileDialog::accepted, [this, _ed, dialog] { save_file(*_ed, *dialog->selectedFiles().data()); });
+    dialog->open();
+}
+
+void canvas::close_image()
+{
+    auto &ed = *current_editor();
+    if (ed.history()->isClean())
+    {
+        close_editor(ed);
+        return;
+    }
+    auto *const dialog = new unsaved_file_dialog(ed, this);
+    connect(dialog, &unsaved_file_dialog::accepted,
+        [this, &ed, dialog](const QString *_path)
+        {
+            if (_path && !save_file(ed, *_path))
+                return;
+            dialog->close();
+            close_editor(ed);
+        });
+    dialog->open();
+}
+
+bool canvas::try_exit()
 {
     while (count() > 0)
-        close_editor(*qobject_cast<editor *>(widget(count() - 1)));
+    {
+        auto &ed = *qobject_cast<editor *>(widget(count() - 1));
+        if (ed.history()->isClean())
+        {
+            close_editor(ed);
+            continue;
+        }
+        auto *const dialog = new unsaved_file_dialog(ed, this);
+        connect(dialog, &unsaved_file_dialog::accepted,
+            [this, &ed, dialog](const QString *_path)
+            {
+                if (_path && !save_file(ed, *_path))
+                    return;
+                dialog->close();
+                close_editor(ed);
+                if (try_exit())
+                    emit exit_prepared();
+            });
+        dialog->open();
+        return false;
+    }
+    return true;
 }
 
 void canvas::choose_tool(const tool::type _type)
@@ -106,6 +182,25 @@ void canvas::close_editor(editor &_ed)
 {
     removeTab(currentIndex());
     _ed.close();
+}
+
+bool canvas::save_file(editor &_ed, const QString &_path)
+{
+    for (int i = 0, mx = count(); i < mx; ++i)
+    {
+        const auto *ed = qobject_cast<editor *>(widget(i));
+        if (ed->path() == _path && ed != &_ed)
+        {
+            show_error(err_file_already_open);
+            return false;
+        }
+    }
+    if (!_ed.save(_path))
+    {
+        show_error(err_could_not_save);
+        return false;
+    }
+    return true;
 }
 
 void canvas::show_error(const QString &_text)

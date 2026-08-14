@@ -24,4 +24,13 @@ QFileDialog *open_file_dialog(canvas *_canv, bool _allow_custom_ext, QWidget *_p
         });
     return fd;
 }
+
+QFileDialog *create_save_file_dialog(const QString &_directory, QWidget *_parent)
+{
+    auto *const fd = new QFileDialog(_parent, "Choose file to save as", _directory, "*.png");
+    fd->setNameFilter("Image files (*.png)");
+    fd->setAcceptMode(QFileDialog::AcceptSave);
+    fd->setAttribute(Qt::WA_DeleteOnClose);
+    return fd;
+}
 } // namespace veles

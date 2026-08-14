@@ -7,6 +7,7 @@
 #include <QEvent>
 #include <QFileInfo>
 #include <QOpenGLWidget>
+#include <QUndoStack>
 
 namespace
 {
@@ -44,7 +45,8 @@ editor::editor(image *_image, QString &&_path, QString &&_name, QWidget *_parent
       image_(_image),
       image_padding_(new QGraphicsRectItem(image_)),
       name_(std::move(_name)),
-      path_(std::move(_path))
+      path_(std::move(_path)),
+      history_(new QUndoStack(this))
 {
     image_->setParent(this);
     installEventFilter(tool_handler_);
@@ -58,12 +60,18 @@ editor::editor(image *_image, QString &&_path, QString &&_name, QWidget *_parent
 
     image_->installEventFilter(tool_handler_);
     image_padding_->setPen(Qt::NoPen);
+    history_->setUndoLimit(200);
+
     connect(this, &editor::changed, [this] { setTransform(QTransform::fromScale(zoom_, zoom_)); });
+    connect(history_, &QUndoStack::indexChanged, this, &editor::changed);
+    connect(history_, &QUndoStack::cleanChanged, this, &editor::changed);
 
     scene()->addItem(image_);
     scene()->installEventFilter(tool_handler_);
     center_on_image();
 }
+
+editor::~editor() { history_->disconnect(this); }
 
 void editor::center_on_image()
 {
@@ -83,12 +91,36 @@ const QString &editor::name() const noexcept { return name_; }
 
 const QString &editor::path() const noexcept { return path_; }
 
+QUndoStack *editor::history() noexcept { return history_; }
+
+const QUndoStack *editor::history() const noexcept { return history_; }
+
+bool editor::exists() const noexcept { return !path_.isEmpty(); }
+
 float editor::zoom() const noexcept { return zoom_; }
 
 void editor::default_zoom()
 {
     zoom_ = 1.f;
     emit changed();
+}
+
+bool editor::save() { return save(path_); }
+
+bool editor::save(const QString &_path)
+{
+    if (!image_->save_with_palette(_path, "png"))
+        return false;
+    if (path_ != _path)
+    {
+        path_ = _path;
+        name_ = QFileInfo(path_).fileName();
+    }
+    if (!history_->isClean())
+        history_->setClean();
+    else
+        emit changed();
+    return true;
 }
 
 void editor::apply_zoom_delta(const float _delta)

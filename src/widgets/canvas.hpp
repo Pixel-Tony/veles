@@ -10,6 +10,8 @@
 class QString;
 
 #define X_VELES_CANVAS_USED_EDITOR_MEMBERS \
+    X(undo, ED->history()->undo())         \
+    X(redo, ED->history()->redo())         \
     X(zoom_in, ED->apply_zoom_delta(1))    \
     X(zoom_out, ED->apply_zoom_delta(-1))  \
     X(default_zoom, ED->default_zoom())
@@ -27,13 +29,16 @@ public:
 
 signals:
     void changed(editor *_editor);
+    void exit_prepared();
 
 public slots:
     void create_new_file();
     void create_image(const QString &_name, QSize _size, palette::type _palette);
     void open_image(const QString &_filepath);
+    void save();
+    void save_as(editor *_ed = nullptr);
     void close_image();
-    void exit();
+    bool try_exit();
     void choose_tool(tool::type _type);
 
 #define X(FUNC, IGNORED) void FUNC() const;
@@ -44,6 +49,7 @@ private:
     void add_editor(editor *_ed);
     [[nodiscard]] editor *current_editor() const noexcept;
     void close_editor(editor &_ed);
+    bool save_file(editor &_ed, const QString &_path);
     void show_error(const QString &_text);
 
     editor *last_editor_ = nullptr;

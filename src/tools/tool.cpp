@@ -1,5 +1,7 @@
 #include "tool.hpp"
 
+#include "color_picker.hpp"
+#include "pen.hpp"
 #include "view.hpp"
 #include "widgets/editor.hpp"
 
@@ -21,6 +23,10 @@ tool *tool::make(tool::type _type)
     {
     case type::view:
         return new view();
+    case type::pen:
+        return new pen();
+    case type::color_picker:
+        return new color_picker();
     default:
         throw std::runtime_error{"Unknown tool type"};
     }

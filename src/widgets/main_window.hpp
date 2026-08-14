@@ -38,7 +38,12 @@ private:
     QLabel *status_bar_;
     palette_tab *palette_tab_;
 
+    QAction *save_;
+    QAction *save_as_;
     QAction *close_;
+
+    QAction *undo_;
+    QAction *redo_;
 
     QAction *zoom_in_;
     QAction *zoom_out_;

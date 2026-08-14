@@ -19,6 +19,17 @@ public:
 
     [[nodiscard]] const palette *get_palette() const noexcept;
 
+    [[nodiscard]] bool set_pixel_color(QPoint _point, QColor _color, QColor *_old);
+    [[nodiscard]] bool save_with_palette(const QString &_filepath, const char *_format = nullptr) const;
+    void fill_points(const QList<QPair<QPoint, QColor>> &_positions_colors);
+    void fill_points(const QList<QPair<QPoint, QColor>> &_positions, QColor _fill_color);
+    void update_contents(QImage &&_source);
+    void update_contents(const QImage &_source);
+    void update_contents(QImage &_source) = delete;
+
+signals:
+    void size_changed();
+
 protected:
     void paint(QPainter *_painter, const QStyleOptionGraphicsItem *_opt, QWidget *_widget = nullptr) override;
     [[nodiscard]] QRectF boundingRect() const override;

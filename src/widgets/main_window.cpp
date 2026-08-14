@@ -16,6 +16,7 @@
 #include <QSettings>
 #include <QStatusBar>
 #include <QToolBar>
+#include <QUndoStack>
 
 namespace
 {
@@ -66,11 +67,17 @@ main_window::main_window()
         ICON(DocumentOpen), "Open...", KEY(Open), [this] { open_file_dialog(canv_, false, this)->show(); });
     file_menu->addAction(ICON(DocumentOpen), "Import...", [this] { open_file_dialog(canv_, true, this)->show(); });
     file_menu->addSeparator();
+    save_ = file_menu->addAction(ICON(DocumentSave), "Save", KEY(Save), canv_, &canvas::save);
+    save_as_ = file_menu->addAction(ICON(DocumentSaveAs), "Save As...", KEY(SaveAs), [this] { canv_->save_as(); });
+    file_menu->addSeparator();
     close_ = file_menu->addAction(ICON(WindowClose), "Close", KEY(Close), canv_, &canvas::close_image);
     file_menu->addSeparator();
     file_menu->addAction(ICON(ApplicationExit), "Exit", KEY(Quit), this, &main_window::close);
 
     auto *edit_menu = menuBar()->addMenu("Edit");
+    undo_ = edit_menu->addAction(ICON(EditUndo), "Undo", KEY(Undo));
+    redo_ = edit_menu->addAction(ICON(EditRedo), "Redo", KEY(Redo));
+    edit_menu->addSeparator();
     edit_menu->addAction("Swap Pen Colors", QKeySequence{"X"}, state::instance(), &state::swap_colors);
 
     auto *view_menu = menuBar()->addMenu("View");
@@ -90,6 +97,8 @@ main_window::main_window()
     make_tool_action(tool_group_, NAME, BIND, ":/assets/icons/" #TOOL ".png", tool::type::TOOL)
 
     auto *view_ = MAKE_TOOL_ACT("View", {"W"}, view);
+    MAKE_TOOL_ACT("Pen", {"D"}, pen);
+    MAKE_TOOL_ACT("Color Picker", {"Q"}, color_picker);
 
 #undef MAKE_TOOL_ACT
 
@@ -107,7 +116,9 @@ main_window::main_window()
     auto *tool_bar_ = new QToolBar("Tool Bar");
     tool_bar_->setMovable(false);
     tool_bar_->setIconSize(view_->icon().availableSizes()[0]);
-    tool_bar_->addActions({new_file, open});
+    tool_bar_->addActions({undo_, redo_});
+    tool_bar_->addSeparator();
+    tool_bar_->addActions({new_file, open, save_, save_as_});
     tool_bar_->addSeparator();
     tool_bar_->addActions(tool_group_->actions());
     tool_bar_->addSeparator();
@@ -119,6 +130,7 @@ main_window::main_window()
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, palette_tab_);
 
     connect(canv_, &canvas::changed, this, &main_window::on_active_editor_changed);
+    connect(canv_, &canvas::exit_prepared, this, &main_window::close);
     statusBar()->addWidget(status_bar_);
 
     palette_tab_->setVisible(QSettings().value("paletteTab/visible", false).toBool());
@@ -131,18 +143,23 @@ void main_window::try_open_image(const QString &_filepath) { canv_->open_image(_
 
 void main_window::closeEvent(QCloseEvent *_ev)
 {
-    _ev->accept();
-    canv_->exit();
-    QSettings().setValue("paletteTab/visible", palette_tab_->isVisible());
+    bool will_exit = canv_->try_exit();
+    if (will_exit)
+        QSettings().setValue("paletteTab/visible", palette_tab_->isVisible());
+    _ev->setAccepted(will_exit);
 }
 
 void main_window::on_active_editor_changed(const editor *const _editor)
 {
     const bool enabled = _editor;
-    close_->setEnabled(enabled);
+    for (auto *a : {save_as_, close_})
+        a->setEnabled(enabled);
+    save_->setEnabled(enabled && (!_editor->exists() || !_editor->history()->isClean()));
     zoom_out_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.first);
     zoom_in_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.second);
     default_zoom_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.first);
+    undo_->setEnabled(enabled && _editor->history()->canUndo());
+    redo_->setEnabled(enabled && _editor->history()->canRedo());
 
     QString status_bar_text;
     QString title_text = "Veles";
@@ -150,12 +167,13 @@ void main_window::on_active_editor_changed(const editor *const _editor)
     {
         const auto &img = _editor->get_image();
         const auto [w, h] = img.size();
+        const char dirty_asterisk = "* "[_editor->history()->isClean()];
         const auto *const palette = img.get_palette();
         const auto name = ellipsis(_editor->name(), 50);
-        status_bar_text = tr("%0 (%1) | %2x%3 | %4%")
-                              .arg(name, palette ? palette->name_ : "32bpp", QString::number(w), QString::number(h),
-                                  QString::number(static_cast<long>(_editor->zoom() * 100)));
-        title_text = tr("%0 - %1").arg(_editor->name(), title_text);
+        status_bar_text = tr("%0%1 (%2) | %3x%4 | %5%")
+                              .arg(name, dirty_asterisk, palette ? palette->name_ : "32bpp", QString::number(w),
+                                  QString::number(h), QString::number(static_cast<long>(_editor->zoom() * 100)));
+        title_text = tr("%0%1 - %2").arg(_editor->name(), dirty_asterisk, title_text);
         if (old_editor_ != _editor)
             palette_tab_->set_palette(palette ? palette->type_ : palette::none);
     }

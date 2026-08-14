@@ -8,6 +8,8 @@
 #include <QSize>
 #include <QString>
 
+class QUndoStack;
+
 namespace veles
 {
 class editor;
@@ -41,20 +43,29 @@ public:
 private:
     editor(image *_image, QString &&_path, QString &&_name, QWidget *_parent);
 
+public:
+    ~editor() override;
+
+    static constexpr QPair<float, float> zoom_bounds = {1, 32};
+
 signals:
     void changed();
 
 public:
-    static constexpr QPair<float, float> zoom_bounds = {1, 32};
-
     [[nodiscard]] image &get_image() noexcept;
     [[nodiscard]] const image &get_image() const noexcept;
     [[nodiscard]] const QString &name() const noexcept;
     [[nodiscard]] const QString &path() const noexcept;
+    [[nodiscard]] QUndoStack *history() noexcept;
+    [[nodiscard]] const QUndoStack *history() const noexcept;
+    [[nodiscard]] bool exists() const noexcept;
     [[nodiscard]] float zoom() const noexcept;
 
     void apply_zoom_delta(float _delta);
     void default_zoom();
+
+    bool save();
+    bool save(const QString &_path);
 
 private slots:
     void center_on_image();
@@ -66,6 +77,8 @@ private:
     QString name_;
     QString path_;
     float zoom_ = 1;
+
+    QUndoStack *history_;
 };
 } // namespace veles
 
