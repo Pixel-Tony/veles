@@ -17,6 +17,10 @@ qt_add_executable(veles-executable
   src/palette.hpp
   src/state.cpp
   src/state.hpp
+  src/tools/tool.cpp
+  src/tools/tool.hpp
+  src/tools/view.cpp
+  src/tools/view.hpp
   src/widgets/canvas.cpp
   src/widgets/canvas.hpp
   src/widgets/create_file_dialog.cpp
@@ -33,6 +37,7 @@ qt_add_executable(veles-executable
 qt_add_resources(veles-executable "veles_assets"
   PREFIX "/"
   FILES
+  assets/icons/view.png
   assets/logo-128.png
   assets/palette-dos-groups.json
   assets/palette-dos.act

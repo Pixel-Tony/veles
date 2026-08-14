@@ -4,6 +4,7 @@
 #include "editor.hpp"
 
 #include <QAction>
+#include <QActionGroup>
 #include <QCloseEvent>
 #include <QLabel>
 #include <QMainWindow>
@@ -39,7 +40,12 @@ private:
 
     QAction *close_;
 
+    QAction *zoom_in_;
+    QAction *zoom_out_;
+    QAction *default_zoom_;
     palette_action *palette_action_;
+
+    QActionGroup *tool_group_;
 
     // A workaround to avoid initializing context on editor creation
     QOpenGLWidget *init_opengl_context_early_ = new QOpenGLWidget(this);

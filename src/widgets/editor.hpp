@@ -10,7 +10,24 @@
 
 namespace veles
 {
+class editor;
 class image;
+
+namespace priv
+{
+class tool_handler : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit tool_handler(editor *_parent = nullptr);
+
+    bool eventFilter(QObject *, QEvent *_ev) override;
+
+private:
+    editor *const ed_;
+};
+} // namespace priv
 
 class editor : public QGraphicsView
 {
@@ -24,20 +41,31 @@ public:
 private:
     editor(image *_image, QString &&_path, QString &&_name, QWidget *_parent);
 
+signals:
+    void changed();
+
 public:
+    static constexpr QPair<float, float> zoom_bounds = {1, 32};
+
     [[nodiscard]] image &get_image() noexcept;
     [[nodiscard]] const image &get_image() const noexcept;
     [[nodiscard]] const QString &name() const noexcept;
     [[nodiscard]] const QString &path() const noexcept;
+    [[nodiscard]] float zoom() const noexcept;
+
+    void apply_zoom_delta(float _delta);
+    void default_zoom();
 
 private slots:
     void center_on_image();
 
 private:
+    priv::tool_handler *tool_handler_;
     image *image_;
     QGraphicsRectItem *image_padding_;
     QString name_;
     QString path_;
+    float zoom_ = 1;
 };
 } // namespace veles
 

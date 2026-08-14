@@ -8,6 +8,7 @@
 #include "palette_action.hpp"
 #include "palette_tab.hpp"
 #include "state.hpp"
+#include "tools/tool.hpp"
 
 #include <QFileDialog>
 #include <QIcon>
@@ -20,6 +21,24 @@ namespace
 {
 QString ellipsis(const QString &_input, const qsizetype _length)
 { return _input.length() <= _length ? _input : _input.sliced(0, _length).replace(_length - 3, 3, "..."); }
+
+QAction *make_tool_action(QActionGroup *_group, const QString &_name, const QKeySequence &_shortcut,
+    const QString &_atlas, veles::tool::type _type)
+{
+    QIcon icon;
+    {
+        const auto atlas = QPixmap{_atlas};
+        const auto h = atlas.height();
+        icon.addPixmap(atlas.copy(0, 0, h, h), QIcon::Normal, QIcon::Off);
+        icon.addPixmap(atlas.copy(h, 0, h, h), QIcon::Normal, QIcon::On);
+    }
+    auto *const _target = _group->addAction(icon, _name);
+    _target->setIconVisibleInMenu(false);
+    _target->setShortcut(_shortcut);
+    _target->setCheckable(true);
+    _target->setData(QVariant::fromValue(_type));
+    return _target;
+}
 } // namespace
 
 namespace veles
@@ -29,6 +48,7 @@ main_window::main_window()
       status_bar_(new QLabel),
       palette_tab_(new palette_tab(this)),
       palette_action_(new palette_action(this)),
+      tool_group_(new QActionGroup(this)),
       old_editor_()
 {
     init_opengl_context_early_->hide();
@@ -53,18 +73,43 @@ main_window::main_window()
     auto *edit_menu = menuBar()->addMenu("Edit");
     edit_menu->addAction("Swap Pen Colors", QKeySequence{"X"}, state::instance(), &state::swap_colors);
 
+    auto *view_menu = menuBar()->addMenu("View");
+    zoom_in_ = view_menu->addAction(ICON(ZoomIn), "Zoom In", KEY(ZoomIn));
+    zoom_out_ = view_menu->addAction(ICON(ZoomOut), "Zoom Out", KEY(ZoomOut));
+    view_menu->addSeparator();
+    default_zoom_ = view_menu->addAction("Default Zoom");
+
 #undef ICON
 #undef KEY
+
+#define X(FILENAME, IGNORED) connect(FILENAME##_, &QAction::triggered, canv_, &canvas::FILENAME);
+    X_VELES_CANVAS_USED_EDITOR_MEMBERS
+#undef X
+
+#define MAKE_TOOL_ACT(NAME, BIND, TOOL) \
+    make_tool_action(tool_group_, NAME, BIND, ":/assets/icons/" #TOOL ".png", tool::type::TOOL)
+
+    auto *view_ = MAKE_TOOL_ACT("View", {"W"}, view);
+
+#undef MAKE_TOOL_ACT
+
+    connect(tool_group_, &QActionGroup::triggered,
+        [this](QAction *_act) { canv_->choose_tool(qvariant_cast<tool::type>(_act->data())); });
+    view_->trigger();
 
     connect(palette_tab_, &palette_tab::color_selected, state::instance(), &state::set_color);
     connect(state::instance(), &state::color_updated, palette_tab_, &palette_tab::set_color);
 
     connect(palette_action_, &palette_action::toggled, palette_tab_, &palette_tab::setVisible);
 
+    menuBar()->addMenu("Tool")->addActions(tool_group_->actions());
+
     auto *tool_bar_ = new QToolBar("Tool Bar");
     tool_bar_->setMovable(false);
-    tool_bar_->setIconSize({24, 24});
+    tool_bar_->setIconSize(view_->icon().availableSizes()[0]);
     tool_bar_->addActions({new_file, open});
+    tool_bar_->addSeparator();
+    tool_bar_->addActions(tool_group_->actions());
     tool_bar_->addSeparator();
     tool_bar_->addAction(palette_action_);
     addToolBar(tool_bar_);
@@ -95,6 +140,10 @@ void main_window::on_active_editor_changed(const editor *const _editor)
 {
     const bool enabled = _editor;
     close_->setEnabled(enabled);
+    zoom_out_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.first);
+    zoom_in_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.second);
+    default_zoom_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.first);
+
     QString status_bar_text;
     QString title_text = "Veles";
     if (enabled)
@@ -103,8 +152,9 @@ void main_window::on_active_editor_changed(const editor *const _editor)
         const auto [w, h] = img.size();
         const auto *const palette = img.get_palette();
         const auto name = ellipsis(_editor->name(), 50);
-        status_bar_text = tr("%0 (%1) | %2x%3")
-                              .arg(name, palette ? palette->name_ : "32bpp", QString::number(w), QString::number(h));
+        status_bar_text = tr("%0 (%1) | %2x%3 | %4%")
+                              .arg(name, palette ? palette->name_ : "32bpp", QString::number(w), QString::number(h),
+                                  QString::number(static_cast<long>(_editor->zoom() * 100)));
         title_text = tr("%0 - %1").arg(_editor->name(), title_text);
         if (old_editor_ != _editor)
             palette_tab_->set_palette(palette ? palette->type_ : palette::none);

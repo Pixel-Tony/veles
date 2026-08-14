@@ -2,7 +2,9 @@
 
 #include "image.hpp"
 #include "moc_editor.cpp"
+#include "tools/tool.hpp"
 
+#include <QEvent>
 #include <QFileInfo>
 #include <QOpenGLWidget>
 
@@ -17,6 +19,14 @@ QString to_png_filename(const QString &_filepath)
 
 namespace veles
 {
+priv::tool_handler::tool_handler(editor *_parent) : QObject(_parent), ed_(_parent) {}
+
+bool priv::tool_handler::eventFilter(QObject *, QEvent *_ev)
+{
+    tool::current->editor_event(*_ev, *ed_);
+    return _ev->isAccepted();
+}
+
 editor::editor(QString &&_name, QSize _image_size, palette::type _palette, QWidget *_parent)
     : editor(new image(_image_size, _palette), {}, std::move(_name), _parent)
 {
@@ -30,12 +40,14 @@ editor::editor(const QString &_filepath, QWidget *_parent)
 
 editor::editor(image *_image, QString &&_path, QString &&_name, QWidget *_parent)
     : QGraphicsView(new QGraphicsScene(_parent), _parent),
+      tool_handler_(new priv::tool_handler(this)),
       image_(_image),
       image_padding_(new QGraphicsRectItem(image_)),
       name_(std::move(_name)),
       path_(std::move(_path))
 {
     image_->setParent(this);
+    installEventFilter(tool_handler_);
     setAttribute(Qt::WA_DeleteOnClose);
     setBackgroundBrush(palette().window());
     setContentsMargins(2, 2, 2, 2);
@@ -43,8 +55,13 @@ editor::editor(image *_image, QString &&_path, QString &&_name, QWidget *_parent
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setTransformationAnchor(ViewportAnchor::AnchorUnderMouse);
     setViewport(new QOpenGLWidget(this));
+
+    image_->installEventFilter(tool_handler_);
     image_padding_->setPen(Qt::NoPen);
+    connect(this, &editor::changed, [this] { setTransform(QTransform::fromScale(zoom_, zoom_)); });
+
     scene()->addItem(image_);
+    scene()->installEventFilter(tool_handler_);
     center_on_image();
 }
 
@@ -65,4 +82,23 @@ const image &editor::get_image() const noexcept { return *image_; }
 const QString &editor::name() const noexcept { return name_; }
 
 const QString &editor::path() const noexcept { return path_; }
+
+float editor::zoom() const noexcept { return zoom_; }
+
+void editor::default_zoom()
+{
+    zoom_ = 1.f;
+    emit changed();
+}
+
+void editor::apply_zoom_delta(const float _delta)
+{
+    const auto zoom_factor = 1 + (zoom_ >= zoom_bounds.second / 3);
+    const auto new_zoom = qBound(zoom_bounds.first, zoom_ + _delta * zoom_factor, zoom_bounds.second);
+    if (new_zoom == zoom_)
+        return;
+    zoom_ = new_zoom;
+    emit changed();
+}
+
 } // namespace veles
