@@ -9,12 +9,16 @@
 
 class QString;
 
-#define X_VELES_CANVAS_USED_EDITOR_MEMBERS \
-    X(undo, ED->history()->undo())         \
-    X(redo, ED->history()->redo())         \
-    X(zoom_in, ED->apply_zoom_delta(1))    \
-    X(zoom_out, ED->apply_zoom_delta(-1))  \
-    X(default_zoom, ED->default_zoom())
+#define X_VELES_CANVAS_USED_EDITOR_MEMBERS   \
+    X(undo, ED->history()->undo())           \
+    X(redo, ED->history()->redo())           \
+    X(zoom_in, ED->apply_zoom_delta(1))      \
+    X(zoom_out, ED->apply_zoom_delta(-1))    \
+    X(default_zoom, ED->default_zoom())      \
+    X(hflip, ED->flip_image(Qt::Horizontal)) \
+    X(vflip, ED->flip_image(Qt::Vertical))   \
+    X(rotate_cw, ED->rotate_image(true))     \
+    X(rotate_ccw, ED->rotate_image(false))
 
 namespace veles
 {
@@ -39,6 +43,7 @@ public slots:
     void save_as(editor *_ed = nullptr);
     void close_image();
     bool try_exit();
+    void resize_image();
     void choose_tool(tool::type _type);
 
 #define X(FUNC, IGNORED) void FUNC() const;

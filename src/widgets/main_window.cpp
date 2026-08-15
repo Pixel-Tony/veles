@@ -80,6 +80,15 @@ main_window::main_window()
     edit_menu->addSeparator();
     edit_menu->addAction("Swap Pen Colors", QKeySequence{"X"}, state::instance(), &state::swap_colors);
 
+    auto *image_menu = menuBar()->addMenu("Image");
+    hflip_ = image_menu->addAction("Flip horizontally");
+    vflip_ = image_menu->addAction("Flip vertically");
+    image_menu->addSeparator();
+    rotate_cw_ = image_menu->addAction(ICON(ObjectRotateRight), "Rotate clockwise");
+    rotate_ccw_ = image_menu->addAction(ICON(ObjectRotateLeft), "Rotate counter-clockwise");
+    image_menu->addSeparator();
+    resize_ = image_menu->addAction("Resize...", canv_, &canvas::resize_image);
+
     auto *view_menu = menuBar()->addMenu("View");
     zoom_in_ = view_menu->addAction(ICON(ZoomIn), "Zoom In", KEY(ZoomIn));
     zoom_out_ = view_menu->addAction(ICON(ZoomOut), "Zoom Out", KEY(ZoomOut));
@@ -152,7 +161,7 @@ void main_window::closeEvent(QCloseEvent *_ev)
 void main_window::on_active_editor_changed(const editor *const _editor)
 {
     const bool enabled = _editor;
-    for (auto *a : {save_as_, close_})
+    for (auto *a : {save_as_, close_, hflip_, vflip_, rotate_cw_, rotate_ccw_, resize_})
         a->setEnabled(enabled);
     save_->setEnabled(enabled && (!_editor->exists() || !_editor->history()->isClean()));
     zoom_out_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.first);

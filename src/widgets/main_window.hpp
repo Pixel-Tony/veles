@@ -45,6 +45,12 @@ private:
     QAction *undo_;
     QAction *redo_;
 
+    QAction *hflip_;
+    QAction *vflip_;
+    QAction *rotate_cw_;
+    QAction *rotate_ccw_;
+    QAction *resize_;
+
     QAction *zoom_in_;
     QAction *zoom_out_;
     QAction *default_zoom_;

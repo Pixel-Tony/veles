@@ -14,6 +14,7 @@ namespace veles
 {
 class editor;
 class image;
+enum class resize_anchor : uint8_t;
 
 namespace priv
 {
@@ -63,6 +64,9 @@ public:
 
     void apply_zoom_delta(float _delta);
     void default_zoom();
+    void flip_image(Qt::Orientations _orient);
+    void rotate_image(bool _clockwise);
+    void resize_image(QSize _new_size, QPair<resize_anchor, resize_anchor> _anchors);
 
     bool save();
     bool save(const QString &_path);

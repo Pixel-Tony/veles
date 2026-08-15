@@ -4,6 +4,7 @@
 #include "dialogs.hpp"
 #include "editor.hpp"
 #include "moc_canvas.cpp"
+#include "resize_dialog.hpp"
 #include "unsaved_file_dialog.hpp"
 
 #include <QDir>
@@ -144,6 +145,8 @@ bool canvas::try_exit()
     }
     return true;
 }
+
+void canvas::resize_image() { (new resize_dialog(current_editor(), this))->show(); }
 
 void canvas::choose_tool(const tool::type _type)
 {

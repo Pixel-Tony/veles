@@ -39,6 +39,8 @@ qt_add_executable(veles-executable
   src/widgets/main_window.hpp
   src/widgets/palette_tab.cpp
   src/widgets/palette_tab.hpp
+  src/widgets/resize_dialog.cpp
+  src/widgets/resize_dialog.hpp
   src/widgets/unsaved_file_dialog.cpp
   src/widgets/unsaved_file_dialog.hpp
 )

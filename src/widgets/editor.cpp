@@ -2,6 +2,8 @@
 
 #include "image.hpp"
 #include "moc_editor.cpp"
+#include "resize_dialog.hpp"
+#include "state.hpp"
 #include "tools/tool.hpp"
 
 #include <QEvent>
@@ -11,11 +13,103 @@
 
 namespace
 {
+using namespace veles;
+
 QString to_png_filename(const QString &_filepath)
 {
     const auto info = QFileInfo(_filepath);
     return _filepath.endsWith(".png") ? info.fileName() : (info.baseName() + ".png");
 }
+
+struct flip_command : QUndoCommand
+{
+    flip_command(image *_img, Qt::Orientations _orient) : img_(_img), orient_(_orient) {}
+
+    void undo() override { redo(); }
+
+    void redo() override { img_->update_contents(img_->flipped(orient_)); }
+
+private:
+    image *const img_;
+    const Qt::Orientations orient_;
+};
+
+struct rotate_command : QUndoCommand
+{
+    rotate_command(image *_img, bool _clockwise) : img_(_img), angle_(_clockwise ? 90 : -90) {}
+
+    void undo() override { img_->update_contents(img_->transformed(QTransform().rotate(-angle_))); }
+
+    void redo() override { img_->update_contents(img_->transformed(QTransform().rotate(angle_))); }
+
+private:
+    image *const img_;
+    const int angle_;
+};
+
+struct resize_command : QUndoCommand
+{
+    resize_command(image *_img, QSize _new_size, QPair<resize_anchor, resize_anchor> _anchors)
+        : img_(_img),
+          old_image_(*static_cast<const QImage *const>(img_)),
+          new_size_(_new_size),
+          anchors_(_anchors),
+          bg_(state::instance()->secondary())
+    {
+    }
+
+    void undo() override { img_->update_contents(old_image_); }
+
+    void redo() override
+    {
+        auto new_img = QImage(new_size_, QImage::Format_ARGB32);
+        new_img.fill(bg_);
+
+        const auto old_size = img_->size();
+        const auto source_dims = old_size.boundedTo(new_size_);
+        const auto in_delta = old_size - source_dims;
+        const auto out_delta = new_size_ - source_dims;
+
+        QPoint source_shift;
+        QPoint pos;
+        switch (anchors_.first)
+        {
+        case resize_anchor::start:
+            break;
+        case resize_anchor::center:
+            source_shift.setX(in_delta.width() / 2);
+            pos.setX(out_delta.width() / 2);
+            break;
+        case resize_anchor::end:
+            source_shift.setX(in_delta.width());
+            pos.setX(out_delta.width());
+            break;
+        }
+        switch (anchors_.second)
+        {
+        case resize_anchor::start:
+            break;
+        case resize_anchor::center:
+            source_shift.setY(in_delta.height() / 2);
+            pos.setY(out_delta.height() / 2);
+            break;
+        case resize_anchor::end:
+            source_shift.setY(in_delta.height());
+            pos.setY(out_delta.height());
+            break;
+        }
+        QPainter painter{&new_img};
+        painter.drawImage(pos, old_image_, {source_shift, source_dims});
+        img_->update_contents(std::move(new_img));
+    }
+
+private:
+    image *const img_;
+    const QPair<resize_anchor, resize_anchor> anchors_;
+    const QSize new_size_;
+    const QImage old_image_;
+    const QColor bg_;
+};
 } // namespace
 
 namespace veles
@@ -62,6 +156,7 @@ editor::editor(image *_image, QString &&_path, QString &&_name, QWidget *_parent
     image_padding_->setPen(Qt::NoPen);
     history_->setUndoLimit(200);
 
+    connect(image_, &image::size_changed, this, &editor::center_on_image);
     connect(this, &editor::changed, [this] { setTransform(QTransform::fromScale(zoom_, zoom_)); });
     connect(history_, &QUndoStack::indexChanged, this, &editor::changed);
     connect(history_, &QUndoStack::cleanChanged, this, &editor::changed);
@@ -132,5 +227,12 @@ void editor::apply_zoom_delta(const float _delta)
     zoom_ = new_zoom;
     emit changed();
 }
+
+void editor::flip_image(Qt::Orientations _orient) { history_->push(new flip_command(image_, _orient)); }
+
+void editor::rotate_image(bool _clockwise) { history_->push(new rotate_command(image_, _clockwise)); }
+
+void editor::resize_image(QSize _new_size, QPair<resize_anchor, resize_anchor> _anchors)
+{ history_->push(new resize_command(image_, _new_size, _anchors)); }
 
 } // namespace veles
