@@ -108,6 +108,7 @@ main_window::main_window()
     auto *view_ = MAKE_TOOL_ACT("View", {"W"}, view);
     MAKE_TOOL_ACT("Pen", {"D"}, pen);
     MAKE_TOOL_ACT("Color Picker", {"Q"}, color_picker);
+    MAKE_TOOL_ACT("Flood Fill", {"F"}, fill);
 
 #undef MAKE_TOOL_ACT
 

@@ -19,6 +19,8 @@ qt_add_executable(veles-executable
   src/state.hpp
   src/tools/color_picker.cpp
   src/tools/color_picker.hpp
+  src/tools/fill.cpp
+  src/tools/fill.hpp
   src/tools/pen.cpp
   src/tools/pen.hpp
   src/tools/tool.cpp
@@ -48,6 +50,7 @@ qt_add_resources(veles-executable "veles_assets"
   PREFIX "/"
   FILES
   assets/icons/color_picker.png
+  assets/icons/fill.png
   assets/icons/pen.png
   assets/icons/view.png
   assets/logo-128.png

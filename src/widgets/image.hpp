@@ -22,7 +22,9 @@ public:
     [[nodiscard]] bool set_pixel_color(QPoint _point, QColor _color, QColor *_old);
     [[nodiscard]] bool save_with_palette(const QString &_filepath, const char *_format = nullptr) const;
     void fill_points(const QList<QPair<QPoint, QColor>> &_positions_colors);
+    void fill_points(const QList<QPoint> &_positions, QColor _fill_color);
     void fill_points(const QList<QPair<QPoint, QColor>> &_positions, QColor _fill_color);
+    [[nodiscard]] QList<QPoint> flood_fill(QPoint _origin, QColor _color, bool _is_star) const;
     void update_contents(QImage &&_source);
     void update_contents(const QImage &_source);
     void update_contents(QImage &_source) = delete;

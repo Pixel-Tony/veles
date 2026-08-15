@@ -13,7 +13,8 @@ struct tool
     {
         view,
         pen,
-        color_picker
+        color_picker,
+        fill
     };
 
     static tool *current;

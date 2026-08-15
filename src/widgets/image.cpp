@@ -4,6 +4,8 @@
 
 #include <QCursor>
 #include <QPainter>
+#include <QQueue>
+#include <QSet>
 #include <QStyleOptionGraphicsItem>
 #include <QToolTip>
 
@@ -68,12 +70,81 @@ void image::fill_points(const QList<QPair<QPoint, QColor>> &_positions_colors)
     update();
 }
 
+void image::fill_points(const QList<QPoint> &_positions, QColor _fill_color)
+{
+    auto r = raster(this);
+    for (const auto &pos : _positions)
+        r[pos] = _fill_color.rgba();
+    update();
+}
+
 void image::fill_points(const QList<QPair<QPoint, QColor>> &_positions, QColor _fill_color)
 {
     auto r = raster(this);
     for (const auto &[pos, _] : _positions)
         r[pos] = _fill_color.rgba();
     update();
+}
+
+QList<QPoint> image::flood_fill(const QPoint _origin, const QColor _color, const bool _is_star) const
+{
+    auto r = raster(this);
+    const auto target_color = r[_origin];
+    if (target_color == _color.rgba())
+        return {};
+    const auto [w, h] = size();
+    QSet<QPoint> points;
+    QQueue<QPair<QPoint, quint8>> q;
+    q.enqueue({_origin, 0});
+    if (_is_star)
+    {
+        while (!q.empty())
+        {
+            const auto [px, dir] = q.dequeue();
+            if (r[px] != target_color || points.contains(px))
+                continue;
+            points.insert(px);
+            if (px.y() > 0)
+            {
+                if (dir != 8 && px.x() > 0)
+                    q.enqueue({px + QPoint{-1, -1}, 4});
+                if (dir != 1)
+                    q.enqueue({px + QPoint{0, -1}, 5});
+                if (dir != 2 && px.x() < w - 1)
+                    q.enqueue({px + QPoint{1, -1}, 6});
+            }
+            if (dir != 3 && px.x() < w - 1)
+                q.enqueue({px + QPoint{1, 0}, 7});
+            if (px.y() < h - 1)
+            {
+                if (dir != 4 && px.x() < w - 1)
+                    q.enqueue({px + QPoint{1, 1}, 8});
+                if (dir != 5)
+                    q.enqueue({px + QPoint{0, 1}, 1});
+                if (dir != 6 && px.x() > 0)
+                    q.enqueue({px + QPoint{-1, 1}, 2});
+            }
+            if (dir != 7 && px.x() > 0)
+                q.enqueue({px + QPoint{-1, 0}, 3});
+        }
+        return points.values();
+    }
+    while (!q.empty())
+    {
+        const auto [px, dir] = q.dequeue();
+        if (r[px] != target_color || points.contains(px))
+            continue;
+        points.insert(px);
+        if (dir != 4 && px.x() > 0)
+            q.enqueue({px + QPoint{-1, 0}, 2});
+        if (dir != 2 && px.x() < w - 1)
+            q.enqueue({px + QPoint{1, 0}, 4});
+        if (dir != 1 && px.y() > 0)
+            q.enqueue({px + QPoint{0, -1}, 3});
+        if (dir != 3 && px.y() < h - 1)
+            q.enqueue({px + QPoint{0, 1}, 1});
+    }
+    return points.values();
 }
 
 void image::update_contents(QImage &&_source)
