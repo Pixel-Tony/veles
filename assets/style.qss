@@ -7,3 +7,7 @@ veles--palette_tab QLabel {
 veles--palette_tab QLabel#groupLabel {
     qproperty-alignment: AlignLeft;
 }
+
+veles--main_window QStatusBar QLabel {
+    font-family: monospace;
+}

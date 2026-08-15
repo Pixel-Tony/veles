@@ -18,7 +18,9 @@ struct raster
 
     raster(TImage *_image) : width_(_image->width()), contents_(reinterpret_cast<type *>(_image->bits())) {}
 
-    type &operator[](QPoint _point) { return contents_[_point.y() * width_ + _point.x()]; }
+    type &operator[](QPoint _point) const { return contents_[_point.y() * width_ + _point.x()]; }
+
+    type &at(int _x, int _y) const { return contents_[_y * width_ + _x]; }
 
 private:
     const uint width_;
@@ -181,6 +183,57 @@ bool image::convert_palette(palette::type _type, bool _validate)
     palette_ = next_palette;
     update();
     return true;
+}
+
+QRect image::sprite_bounds(QPoint _pos) const noexcept
+{
+    if (!contains(_pos))
+        return {};
+    const auto r = raster(this);
+    const auto background = palette_ ? qRgb(255, 255, 255) : 0;
+    if (r[_pos] == background)
+        return {};
+
+    const auto [mx, my] = size() - QSize{1, 1};
+    auto [x, y] = _pos;
+    while (x > 0 && r.at(x - 1, y) != background)
+        --x;
+    const auto left = x;
+    for (; y > 0; --y)
+    {
+        if (r.at(x, y - 1) == background)
+            break;
+        if (left > 0 && r.at(x - 1, y - 1) != background)
+            return {};
+    }
+    const auto bottom = y;
+    for (; x < mx; ++x)
+    {
+        if (r.at(x + 1, y) == background)
+            break;
+        if (bottom > 0 && r.at(x + 1, y - 1) != background)
+            return {};
+    }
+    const auto right = x;
+    for (; y < my; ++y)
+    {
+        if (r.at(x, y + 1) == background)
+            break;
+        if (right < mx - 1 && r.at(x + 1, y + 1) != background)
+            return {};
+    }
+    const auto top = y;
+    for (; x > 0; --x)
+    {
+        if (r.at(x - 1, y) == background)
+            break;
+        if (top < my - 1 && r.at(x - 1, y + 1) != background)
+            return {};
+    }
+    if (x != left)
+        return {};
+    const auto rect = QRect::span({left, bottom}, {right, top});
+    return rect.width() * rect.height() > 1 ? rect : QRect{};
 }
 
 void image::paint(QPainter *_painter, const QStyleOptionGraphicsItem *, QWidget *)

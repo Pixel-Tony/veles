@@ -14,7 +14,8 @@ struct tool
         view,
         pen,
         color_picker,
-        fill
+        fill,
+        select
     };
 
     static tool *current;

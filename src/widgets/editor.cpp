@@ -3,11 +3,13 @@
 #include "image.hpp"
 #include "moc_editor.cpp"
 #include "resize_dialog.hpp"
+#include "selection.hpp"
 #include "state.hpp"
 #include "tools/tool.hpp"
 
 #include <QEvent>
 #include <QFileInfo>
+#include <QMessageBox>
 #include <QOpenGLWidget>
 #include <QUndoStack>
 
@@ -128,6 +130,68 @@ private:
     image *const img_;
     const palette::type old_type_, new_type_;
 };
+
+struct drop_selection_command : QUndoCommand
+{
+    drop_selection_command(image *_image, selection *_selection)
+        : img_(_image),
+          rect_(_selection->rect()),
+          replacement_(_selection->get_image()),
+          original_(img_->copy(rect_))
+    {
+    }
+
+    void undo() override
+    {
+        QPainter(img_).drawImage(rect_, original_);
+        img_->update();
+    }
+
+    void redo() override
+    {
+        QPainter(img_).drawImage(rect_, replacement_);
+        img_->update();
+    }
+
+private:
+    image *const img_;
+    const QRect rect_;
+    const QImage replacement_;
+    const QImage original_;
+};
+
+struct crop_to_selection_command : QUndoCommand
+{
+    crop_to_selection_command(editor *_ed, image *_img, QRect _rect)
+        : ed_(_ed),
+          img_(_img),
+          rect_(_rect),
+          contents_(_img->copy()),
+          new_contents_(_img->copy(rect_))
+    {
+    }
+
+    void redo() override
+    {
+        img_->update_contents(new_contents_);
+        if (auto *const sel = ed_->get_selection())
+            sel->setPos({});
+    }
+
+    void undo() override
+    {
+        img_->update_contents(contents_);
+        if (auto *const sel = ed_->get_selection())
+            sel->setPos(rect_.topLeft());
+    }
+
+private:
+    editor *const ed_;
+    image *const img_;
+    const QRect rect_;
+    const QImage contents_;
+    const QImage new_contents_;
+};
 } // namespace
 
 namespace veles
@@ -156,6 +220,7 @@ editor::editor(image *_image, QString &&_path, QString &&_name, QWidget *_parent
       tool_handler_(new priv::tool_handler(this)),
       image_(_image),
       image_padding_(new QGraphicsRectItem(image_)),
+      selection_(nullptr),
       name_(std::move(_name)),
       path_(std::move(_path)),
       history_(new QUndoStack(this))
@@ -234,6 +299,80 @@ bool editor::save(const QString &_path)
     else
         emit changed();
     return true;
+}
+
+selection *editor::get_selection() const noexcept { return selection_; }
+
+selection *editor::add_selection(QRect _rect)
+{
+    drop_selection();
+    selection_ = new selection(_rect, image_);
+    selection_->installEventFilter(tool_handler_);
+    connect(selection_, &selection::size_changed, this, &editor::changed);
+    emit changed();
+    return selection_;
+}
+
+void editor::copy_selection()
+{
+    if (!selection_)
+        return;
+    auto img = selection_->get_image();
+    bool is_null = img.isNull();
+    if (is_null)
+        img = image_->copy(selection_->rect());
+    state::instance()->set_clipboard(img, image_->get_palette());
+}
+
+void editor::paste_selection()
+{
+    const auto &[contents, paste_palette] = state::instance()->clipboard();
+    if (contents.isNull())
+        return;
+    if (const auto *palette_ = image_->get_palette(); palette_ && palette_ != paste_palette)
+    {
+        auto *const msg = new QMessageBox(QMessageBox::Critical, "Error",
+            "Clipboard palette does not match the image palette.", QMessageBox::Ok, this);
+        msg->setAttribute(Qt::WA_DeleteOnClose);
+        msg->show();
+        return;
+    }
+    if (selection_ && selection_->get_image().isNull())
+    {
+        const auto center = selection_->rect().toRectF().center();
+        const auto shift = QPointF(contents.width(), contents.height()) / 2;
+        selection_->setPos(point_to_pixel(center - shift));
+        selection_->set_image(contents);
+        return;
+    }
+    const auto center = mapToScene(mapFromGlobal(QCursor::pos()));
+    const auto shift = QPoint(contents.width() / 2, contents.height() / 2);
+    const auto position = point_to_pixel(center - shift);
+    add_selection({position, contents.size()})->set_image(contents);
+}
+
+void editor::drop_selection()
+{
+    if (!selection_)
+        return;
+    scene()->removeItem(selection_);
+    if (!selection_->get_image().isNull())
+        history_->push(new drop_selection_command(image_, selection_));
+    selection_->deleteLater();
+    selection_ = nullptr;
+    emit changed();
+}
+
+void editor::select_all() { (void)add_selection(image_->rect()); }
+
+void editor::crop_to_selection()
+{
+    if (!selection_)
+        return;
+    auto rect = selection_->sceneBoundingRect().intersected(image_->rect());
+    if (rect.isEmpty())
+        return;
+    history_->push(new crop_to_selection_command(this, image_, rect.toRect()));
 }
 
 void editor::apply_zoom_delta(const float _delta)

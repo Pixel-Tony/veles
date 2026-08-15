@@ -23,6 +23,8 @@ qt_add_executable(veles-executable
   src/tools/fill.hpp
   src/tools/pen.cpp
   src/tools/pen.hpp
+  src/tools/select.cpp
+  src/tools/select.hpp
   src/tools/tool.cpp
   src/tools/tool.hpp
   src/tools/view.cpp
@@ -45,6 +47,8 @@ qt_add_executable(veles-executable
   src/widgets/palette_tab.hpp
   src/widgets/resize_dialog.cpp
   src/widgets/resize_dialog.hpp
+  src/widgets/selection.cpp
+  src/widgets/selection.hpp
   src/widgets/unsaved_file_dialog.cpp
   src/widgets/unsaved_file_dialog.hpp
 )
@@ -54,6 +58,7 @@ qt_add_resources(veles-executable "veles_assets"
   assets/icons/color_picker.png
   assets/icons/fill.png
   assets/icons/pen.png
+  assets/icons/select.png
   assets/icons/view.png
   assets/logo-128.png
   assets/palette-dos-groups.json

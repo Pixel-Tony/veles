@@ -8,6 +8,8 @@
 
 namespace veles
 {
+inline QPoint point_to_pixel(QPointF _point) { return {static_cast<int>(_point.x()), static_cast<int>(_point.y())}; }
+
 class image : public QGraphicsObject, public QImage
 {
     Q_OBJECT
@@ -29,6 +31,8 @@ public:
     void update_contents(const QImage &_source);
     void update_contents(QImage &_source) = delete;
     bool convert_palette(palette::type _type, bool _validate = true);
+
+    [[nodiscard]] QRect sprite_bounds(QPoint _pos) const noexcept;
 
 signals:
     void size_changed();

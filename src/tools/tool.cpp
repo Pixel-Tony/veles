@@ -3,6 +3,7 @@
 #include "color_picker.hpp"
 #include "fill.hpp"
 #include "pen.hpp"
+#include "select.hpp"
 #include "view.hpp"
 #include "widgets/editor.hpp"
 
@@ -30,6 +31,8 @@ tool *tool::make(tool::type _type)
         return new color_picker();
     case type::fill:
         return new fill();
+    case type::select:
+        return new select();
     default:
         throw std::runtime_error{"Unknown tool type"};
     }

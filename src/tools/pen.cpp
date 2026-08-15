@@ -7,6 +7,15 @@
 #include <QEvent>
 #include <QGraphicsSceneMouseEvent>
 
+namespace
+{
+inline bool covered_by_selection(const veles::editor &_ed, const QPointF &_point)
+{
+    auto *sel = _ed.get_selection();
+    return sel && !sel->get_image().isNull() && sel->sceneBoundingRect().contains(_point);
+}
+} // namespace
+
 namespace veles
 {
 pen::command::command(QColor _color, image *_image) : color_(_color), image_(_image) {}
@@ -42,12 +51,13 @@ void pen::editor_event(QEvent &_ev, editor &_ed)
         _ev.accept();
         auto *const st = state::instance();
         auto &img = _ed.get_image();
-        const auto pos = img.mapFromScene(mev->scenePos());
+        const auto pos = mev->scenePos();
         QColor color;
         switch (mev->button())
         {
         case Qt::MiddleButton:
-            st->set_primary(img.pixelColor(QPoint(pos.x(), pos.y())));
+            if (img.contains(pos))
+                st->set_primary(img.pixelColor(point_to_pixel(pos)));
             return;
         case Qt::LeftButton:
             color = st->primary();
@@ -60,7 +70,7 @@ void pen::editor_event(QEvent &_ev, editor &_ed)
             return;
         }
         command_ = new command(color, &img);
-        if (img.contains(pos))
+        if (!covered_by_selection(_ed, pos))
             command_->add_color(pos);
         break;
     }
@@ -75,8 +85,8 @@ void pen::editor_event(QEvent &_ev, editor &_ed)
         break;
     case QEvent::GraphicsSceneMouseMove:
         _ev.setAccepted(command_);
-        if (command_)
-            command_->add_color(_ed.get_image().mapFromScene(mev->scenePos()));
+        if (const auto point = mev->scenePos(); command_ && !covered_by_selection(_ed, point))
+            command_->add_color(point);
         break;
     case QEvent::GraphicsSceneMouseRelease:
         _ev.setAccepted(command_);

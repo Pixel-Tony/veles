@@ -79,6 +79,10 @@ main_window::main_window()
     redo_ = edit_menu->addAction(ICON(EditRedo), "Redo", KEY(Redo));
     edit_menu->addSeparator();
     edit_menu->addAction("Swap Pen Colors", QKeySequence{"X"}, state::instance(), &state::swap_colors);
+    edit_menu->addSeparator();
+    select_all_ = edit_menu->addAction(ICON(EditSelectAll), "Select All", KEY(SelectAll));
+    copy_selection_ = edit_menu->addAction(ICON(EditCopy), "Copy", KEY(Copy));
+    paste_selection_ = edit_menu->addAction(ICON(EditPaste), "Paste", KEY(Paste));
 
     auto *image_menu = menuBar()->addMenu("Image");
     hflip_ = image_menu->addAction("Flip horizontally");
@@ -88,6 +92,8 @@ main_window::main_window()
     rotate_ccw_ = image_menu->addAction(ICON(ObjectRotateLeft), "Rotate counter-clockwise");
     image_menu->addSeparator();
     resize_ = image_menu->addAction("Resize...", canv_, &canvas::resize_image);
+    image_menu->addSeparator();
+    crop_to_selection_ = image_menu->addAction("Crop to selection");
     image_menu->addSeparator();
     convert_palette_ = image_menu->addAction("Convert palette...", canv_, &canvas::convert_palette);
 
@@ -111,6 +117,7 @@ main_window::main_window()
     MAKE_TOOL_ACT("Pen", {"D"}, pen);
     MAKE_TOOL_ACT("Color Picker", {"Q"}, color_picker);
     MAKE_TOOL_ACT("Flood Fill", {"F"}, fill);
+    MAKE_TOOL_ACT("Select", {"G"}, select);
 
 #undef MAKE_TOOL_ACT
 
@@ -131,6 +138,9 @@ main_window::main_window()
     tool_bar_->addActions({undo_, redo_});
     tool_bar_->addSeparator();
     tool_bar_->addActions({new_file, open, save_, save_as_});
+    tool_bar_->addSeparator();
+    tool_bar_->addAction(select_all_);
+    tool_bar_->addAction(copy_selection_);
     tool_bar_->addSeparator();
     tool_bar_->addActions(tool_group_->actions());
     tool_bar_->addSeparator();
@@ -172,6 +182,9 @@ void main_window::on_active_editor_changed(const editor *const _editor)
     default_zoom_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.first);
     undo_->setEnabled(enabled && _editor->history()->canUndo());
     redo_->setEnabled(enabled && _editor->history()->canRedo());
+    select_all_->setEnabled(enabled && tool::current->type_ == tool::type::select);
+    for (auto *a : {copy_selection_, crop_to_selection_})
+        a->setEnabled(enabled && _editor->get_selection());
 
     QString status_bar_text;
     QString title_text = "Veles";
@@ -182,9 +195,14 @@ void main_window::on_active_editor_changed(const editor *const _editor)
         const char dirty_asterisk = "* "[_editor->history()->isClean()];
         const auto *const palette = img.get_palette();
         const auto name = ellipsis(_editor->name(), 50);
-        status_bar_text = tr("%0%1 (%2) | %3x%4 | %5%")
+        status_bar_text = tr(" %0%1 (%2) | %3x%4 | %5% |")
                               .arg(name, dirty_asterisk, palette ? palette->name_ : "32bpp", QString::number(w),
                                   QString::number(h), QString::number(static_cast<long>(_editor->zoom() * 100)));
+        if (selection *sel = nullptr; _editor && (sel = _editor->get_selection()))
+        {
+            auto [w, h] = sel->rect().size();
+            status_bar_text.append(tr(" %0x%1").arg(QString::number(w), QString::number(h)));
+        }
         title_text = tr("%0%1 - %2").arg(_editor->name(), dirty_asterisk, title_text);
         if (old_editor_ != _editor)
             palette_tab_->set_palette(palette ? palette->type_ : palette::none);

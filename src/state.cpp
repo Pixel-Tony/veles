@@ -3,6 +3,7 @@
 #include "moc_state.cpp"
 
 #include <QApplication>
+#include <QClipboard>
 
 namespace
 {
@@ -35,6 +36,14 @@ void state::swap_colors()
 }
 
 [[nodiscard]] QColor state::color(bool _primary) const noexcept { return _primary ? primary_ : secondary_; }
+
+void state::set_clipboard(const QImage &_image, const palette *_palette)
+{
+    qApp->clipboard()->setImage(_image);
+    clipboard_ = {_image, _palette};
+}
+
+QPair<const QImage &, const palette *> state::clipboard() { return clipboard_; }
 
 state *state::instance() { return instance_ ? instance_ : new state; }
 } // namespace veles

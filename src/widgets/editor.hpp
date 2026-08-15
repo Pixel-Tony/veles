@@ -2,6 +2,7 @@
 #define VELES_CANVAS_SCENE_HPP
 
 #include "palette.hpp"
+#include "selection.hpp"
 
 #include <QGraphicsView>
 #include <QPair>
@@ -15,6 +16,7 @@ namespace veles
 class editor;
 class image;
 enum class resize_anchor : uint8_t;
+class selection;
 
 namespace priv
 {
@@ -62,6 +64,15 @@ public:
     [[nodiscard]] bool exists() const noexcept;
     [[nodiscard]] float zoom() const noexcept;
 
+    [[nodiscard]] selection *get_selection() const noexcept;
+    [[nodiscard]] selection *add_selection(QRect _rect);
+    void copy_selection();
+    void paste_selection(QPoint _center);
+    void paste_selection();
+    void drop_selection();
+    void select_all();
+    void crop_to_selection();
+
     void apply_zoom_delta(float _delta);
     void default_zoom();
     void flip_image(Qt::Orientations _orient);
@@ -79,6 +90,7 @@ private:
     priv::tool_handler *tool_handler_;
     image *image_;
     QGraphicsRectItem *image_padding_;
+    selection *selection_;
     QString name_;
     QString path_;
     float zoom_ = 1;

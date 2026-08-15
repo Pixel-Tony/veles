@@ -44,12 +44,16 @@ private:
 
     QAction *undo_;
     QAction *redo_;
+    QAction *select_all_;
+    QAction *copy_selection_;
+    QAction *paste_selection_;
 
     QAction *hflip_;
     QAction *vflip_;
     QAction *rotate_cw_;
     QAction *rotate_ccw_;
     QAction *resize_;
+    QAction *crop_to_selection_;
     QAction *convert_palette_;
 
     QAction *zoom_in_;

@@ -9,16 +9,20 @@
 
 class QString;
 
-#define X_VELES_CANVAS_USED_EDITOR_MEMBERS   \
-    X(undo, ED->history()->undo())           \
-    X(redo, ED->history()->redo())           \
-    X(zoom_in, ED->apply_zoom_delta(1))      \
-    X(zoom_out, ED->apply_zoom_delta(-1))    \
-    X(default_zoom, ED->default_zoom())      \
-    X(hflip, ED->flip_image(Qt::Horizontal)) \
-    X(vflip, ED->flip_image(Qt::Vertical))   \
-    X(rotate_cw, ED->rotate_image(true))     \
-    X(rotate_ccw, ED->rotate_image(false))
+#define X_VELES_CANVAS_USED_EDITOR_MEMBERS    \
+    X(undo, ED->history()->undo())            \
+    X(redo, ED->history()->redo())            \
+    X(zoom_in, ED->apply_zoom_delta(1))       \
+    X(zoom_out, ED->apply_zoom_delta(-1))     \
+    X(default_zoom, ED->default_zoom())       \
+    X(hflip, ED->flip_image(Qt::Horizontal))  \
+    X(vflip, ED->flip_image(Qt::Vertical))    \
+    X(rotate_cw, ED->rotate_image(true))      \
+    X(rotate_ccw, ED->rotate_image(false))    \
+    X(select_all, ED->select_all())           \
+    X(copy_selection, ED->copy_selection())   \
+    X(paste_selection, ED->paste_selection()) \
+    X(crop_to_selection, ED->crop_to_selection())
 
 namespace veles
 {
