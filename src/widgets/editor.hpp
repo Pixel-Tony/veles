@@ -67,6 +67,7 @@ public:
     void flip_image(Qt::Orientations _orient);
     void rotate_image(bool _clockwise);
     void resize_image(QSize _new_size, QPair<resize_anchor, resize_anchor> _anchors);
+    bool convert_palette(palette::type _type);
 
     bool save();
     bool save(const QString &_path);

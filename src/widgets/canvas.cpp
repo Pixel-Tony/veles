@@ -1,5 +1,6 @@
 #include "canvas.hpp"
 
+#include "convert_palette_dialog.hpp"
 #include "create_file_dialog.hpp"
 #include "dialogs.hpp"
 #include "editor.hpp"
@@ -163,6 +164,8 @@ void canvas::choose_tool(const tool::type _type)
         t->enter_editor(*ed);
     emit changed(ed);
 }
+
+void canvas::convert_palette() { (new convert_palette_dialog(this, current_editor()))->show(); }
 
 #define ED current_editor()
 #define X(FUNC, IMPL) \

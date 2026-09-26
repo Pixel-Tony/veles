@@ -22,6 +22,8 @@ struct raster
 
 private:
     const uint width_;
+
+public:
     type *const contents_;
 };
 } // namespace
@@ -159,6 +161,27 @@ void image::update_contents(QImage &&_source)
 }
 
 void image::update_contents(const QImage &_source) { update_contents(_source.copy()); }
+
+bool image::convert_palette(palette::type _type, bool _validate)
+{
+    const auto *next_palette = palette::make(_type);
+    if (_validate && _type != palette::none)
+    {
+        const auto &next_contents = next_palette->contents_;
+        const auto r = raster<const image>(this);
+        const auto *color = r.contents_;
+        const auto *const end = color + width() * height();
+        while (color < end)
+        {
+            if (!next_contents.contains(*color))
+                return false;
+            ++color;
+        }
+    }
+    palette_ = next_palette;
+    update();
+    return true;
+}
 
 void image::paint(QPainter *_painter, const QStyleOptionGraphicsItem *, QWidget *)
 {

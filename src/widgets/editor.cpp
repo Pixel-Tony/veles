@@ -110,6 +110,24 @@ private:
     const QImage old_image_;
     const QColor bg_;
 };
+
+struct convert_palette_command : QUndoCommand
+{
+    convert_palette_command(image *_img, palette::type _old, palette::type _new)
+        : img_(_img),
+          old_type_(_old),
+          new_type_(_new)
+    {
+    }
+
+    void undo() override { img_->convert_palette(old_type_, false); }
+
+    void redo() override { img_->convert_palette(new_type_, false); }
+
+private:
+    image *const img_;
+    const palette::type old_type_, new_type_;
+};
 } // namespace
 
 namespace veles
@@ -235,4 +253,13 @@ void editor::rotate_image(bool _clockwise) { history_->push(new rotate_command(i
 void editor::resize_image(QSize _new_size, QPair<resize_anchor, resize_anchor> _anchors)
 { history_->push(new resize_command(image_, _new_size, _anchors)); }
 
+bool editor::convert_palette(palette::type _type)
+{
+    const auto *palette_ = image_->get_palette();
+    auto current_type = palette_ ? palette_->type_ : palette::none;
+    if (!image_->convert_palette(_type))
+        return false;
+    history_->push(new convert_palette_command(image_, current_type, _type));
+    return true;
+}
 } // namespace veles

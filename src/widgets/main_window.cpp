@@ -88,6 +88,8 @@ main_window::main_window()
     rotate_ccw_ = image_menu->addAction(ICON(ObjectRotateLeft), "Rotate counter-clockwise");
     image_menu->addSeparator();
     resize_ = image_menu->addAction("Resize...", canv_, &canvas::resize_image);
+    image_menu->addSeparator();
+    convert_palette_ = image_menu->addAction("Convert palette...", canv_, &canvas::convert_palette);
 
     auto *view_menu = menuBar()->addMenu("View");
     zoom_in_ = view_menu->addAction(ICON(ZoomIn), "Zoom In", KEY(ZoomIn));
@@ -162,7 +164,7 @@ void main_window::closeEvent(QCloseEvent *_ev)
 void main_window::on_active_editor_changed(const editor *const _editor)
 {
     const bool enabled = _editor;
-    for (auto *a : {save_as_, close_, hflip_, vflip_, rotate_cw_, rotate_ccw_, resize_})
+    for (auto *a : {save_as_, close_, hflip_, vflip_, rotate_cw_, rotate_ccw_, resize_, convert_palette_})
         a->setEnabled(enabled);
     save_->setEnabled(enabled && (!_editor->exists() || !_editor->history()->isClean()));
     zoom_out_->setEnabled(enabled && _editor->zoom() != editor::zoom_bounds.first);

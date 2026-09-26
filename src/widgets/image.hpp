@@ -28,6 +28,7 @@ public:
     void update_contents(QImage &&_source);
     void update_contents(const QImage &_source);
     void update_contents(QImage &_source) = delete;
+    bool convert_palette(palette::type _type, bool _validate = true);
 
 signals:
     void size_changed();
@@ -37,7 +38,7 @@ protected:
     [[nodiscard]] QRectF boundingRect() const override;
 
 private:
-    const palette *const palette_;
+    const palette *palette_;
 };
 } // namespace veles
 

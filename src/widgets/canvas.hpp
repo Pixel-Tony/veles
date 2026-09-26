@@ -45,6 +45,7 @@ public slots:
     bool try_exit();
     void resize_image();
     void choose_tool(tool::type _type);
+    void convert_palette();
 
 #define X(FUNC, IGNORED) void FUNC() const;
     X_VELES_CANVAS_USED_EDITOR_MEMBERS

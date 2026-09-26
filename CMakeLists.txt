@@ -29,6 +29,8 @@ qt_add_executable(veles-executable
   src/tools/view.hpp
   src/widgets/canvas.cpp
   src/widgets/canvas.hpp
+  src/widgets/convert_palette_dialog.cpp
+  src/widgets/convert_palette_dialog.hpp
   src/widgets/create_file_dialog.cpp
   src/widgets/create_file_dialog.hpp
   src/widgets/dialogs.cpp

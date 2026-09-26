@@ -50,6 +50,7 @@ private:
     QAction *rotate_cw_;
     QAction *rotate_ccw_;
     QAction *resize_;
+    QAction *convert_palette_;
 
     QAction *zoom_in_;
     QAction *zoom_out_;
