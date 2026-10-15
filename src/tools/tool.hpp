@@ -3,6 +3,13 @@
 
 class QEvent;
 
+#define X_TOOLS                     \
+    X("View", view)                 \
+    X("Pen", pen)                   \
+    X("Color Picker", color_picker) \
+    X("Flood Fill", fill)           \
+    X("Select", select)
+
 namespace veles
 {
 class editor;
@@ -11,11 +18,9 @@ struct tool
 {
     enum class type
     {
-        view,
-        pen,
-        color_picker,
-        fill,
-        select
+#define X(NAME, KEY) KEY,
+        X_TOOLS
+#undef X
     };
 
     static tool *current;

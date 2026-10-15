@@ -2,6 +2,7 @@
 #define VELES_MAIN_WINDOW_HPP
 
 #include "editor.hpp"
+#include "tools/tool.hpp"
 
 #include <QAction>
 #include <QActionGroup>
@@ -17,6 +18,7 @@ namespace veles
 class canvas;
 class palette_tab;
 class palette_action;
+class settings_menu;
 
 class main_window : public QMainWindow
 {
@@ -37,6 +39,7 @@ private:
     canvas *canv_;
     QLabel *status_bar_;
     palette_tab *palette_tab_;
+    settings_menu *settings_menu_;
 
     QAction *save_;
     QAction *save_as_;
@@ -62,6 +65,9 @@ private:
     palette_action *palette_action_;
 
     QActionGroup *tool_group_;
+#define X(NAME, KEY) QAction *KEY##_;
+    X_TOOLS
+#undef X
 
     // A workaround to avoid initializing context on editor creation
     QOpenGLWidget *init_opengl_context_early_ = new QOpenGLWidget(this);

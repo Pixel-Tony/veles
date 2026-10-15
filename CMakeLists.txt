@@ -49,6 +49,8 @@ qt_add_executable(veles-executable
   src/widgets/resize_dialog.hpp
   src/widgets/selection.cpp
   src/widgets/selection.hpp
+  src/widgets/settings_menu.cpp
+  src/widgets/settings_menu.hpp
   src/widgets/unsaved_file_dialog.cpp
   src/widgets/unsaved_file_dialog.hpp
 )

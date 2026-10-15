@@ -6,6 +6,7 @@
 #include "editor.hpp"
 #include "moc_canvas.cpp"
 #include "resize_dialog.hpp"
+#include "state.hpp"
 #include "unsaved_file_dialog.hpp"
 
 #include <QDir>
@@ -96,7 +97,13 @@ void canvas::save_as(editor *_ed)
     dir += "/" + _ed->name();
 
     auto *const dialog = create_save_file_dialog(dir, this);
-    connect(dialog, &QFileDialog::accepted, [this, _ed, dialog] { save_file(*_ed, *dialog->selectedFiles().data()); });
+    connect(dialog, &QFileDialog::accepted,
+        [this, _ed, dialog]
+        {
+            const auto &old_path = _ed->path();
+            if (save_file(*_ed, *dialog->selectedFiles().data()) && old_path != _ed->path())
+                state::instance()->replace_recent(old_path, _ed->path());
+        });
     dialog->open();
 }
 
@@ -180,6 +187,8 @@ void canvas::add_editor(editor *const _ed)
 {
     connect(_ed, &editor::changed, [this, _ed] { emit changed(_ed); });
     setCurrentIndex(addTab(_ed, _ed->name()));
+    if (const auto &path = _ed->path(); !path.isEmpty())
+        state::instance()->push_recent(_ed->path());
 }
 
 editor *canvas::current_editor() const noexcept { return qobject_cast<editor *>(currentWidget()); }

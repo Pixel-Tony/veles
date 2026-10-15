@@ -7,6 +7,7 @@
 #include "moc_main_window.cpp"
 #include "palette_action.hpp"
 #include "palette_tab.hpp"
+#include "settings_menu.hpp"
 #include "state.hpp"
 #include "tools/tool.hpp"
 
@@ -48,8 +49,12 @@ main_window::main_window()
     : canv_(new canvas),
       status_bar_(new QLabel),
       palette_tab_(new palette_tab(this)),
+      settings_menu_(new settings_menu(this)),
       palette_action_(new palette_action(this)),
       tool_group_(new QActionGroup(this)),
+#define X(NAME, KEY) KEY##_(nullptr),
+      X_TOOLS
+#undef X
       old_editor_()
 {
     init_opengl_context_early_->hide();
@@ -60,17 +65,55 @@ main_window::main_window()
 #define ICON(VAL) QIcon::fromTheme(QIcon::ThemeIcon::VAL)
 #define KEY(VAL) QKeySequence::VAL
 
+#define X(NAME, KEY) KEY##_->setShortcut(settings_menu_->shortcut_##KEY());
+    connect(settings_menu_, &settings_menu::updated, [this] {
+        state::instance()->set_recent_count(settings_menu_->max_recent_files());
+         X_TOOLS
+        });
+#undef X
+
     auto *file_menu = menuBar()->addMenu("File");
     auto *new_file = file_menu->addAction(ICON(DocumentNew), "New...", KEY(New), canv_, &canvas::create_new_file);
     file_menu->addSeparator();
     auto *open = file_menu->addAction(
         ICON(DocumentOpen), "Open...", KEY(Open), [this] { open_file_dialog(canv_, false, this)->show(); });
+    auto *open_recent = file_menu->addMenu(ICON(DocumentOpenRecent), "Open recent");
+    connect(state::instance(), &state::recent_files_changed,
+        [open_recent]
+        {
+            open_recent->clear();
+            auto recent = state::instance()->recent_files();
+            if (recent.isEmpty())
+            {
+                open_recent->addAction("No recent files yet")->setEnabled(false);
+                return;
+            }
+            for (const auto &path : recent)
+            {
+                auto *const act = open_recent->addAction(QFileInfo{path}.fileName());
+                act->setToolTip(path);
+                act->setData(path);
+            }
+            open_recent->addSeparator();
+            open_recent->addAction(ICON(ListRemove), "Clear recent");
+        });
+    connect(open_recent, &QMenu::triggered,
+        [this](QAction *_action)
+        {
+            if (auto data = _action->data().toString(); !data.isEmpty())
+                canv_->open_image(_action->data().toString());
+            else
+                state::instance()->clear_recent_files();
+        });
+
     file_menu->addAction(ICON(DocumentOpen), "Import...", [this] { open_file_dialog(canv_, true, this)->show(); });
     file_menu->addSeparator();
     save_ = file_menu->addAction(ICON(DocumentSave), "Save", KEY(Save), canv_, &canvas::save);
     save_as_ = file_menu->addAction(ICON(DocumentSaveAs), "Save As...", KEY(SaveAs), [this] { canv_->save_as(); });
     file_menu->addSeparator();
     close_ = file_menu->addAction(ICON(WindowClose), "Close", KEY(Close), canv_, &canvas::close_image);
+    file_menu->addSeparator();
+    file_menu->addAction(ICON(DocumentProperties), "Settings...", settings_menu_, &settings_menu::open);
     file_menu->addSeparator();
     file_menu->addAction(ICON(ApplicationExit), "Exit", KEY(Quit), this, &main_window::close);
 
@@ -110,16 +153,11 @@ main_window::main_window()
     X_VELES_CANVAS_USED_EDITOR_MEMBERS
 #undef X
 
-#define MAKE_TOOL_ACT(NAME, BIND, TOOL) \
-    make_tool_action(tool_group_, NAME, BIND, ":/assets/icons/" #TOOL ".png", tool::type::TOOL)
-
-    auto *view_ = MAKE_TOOL_ACT("View", {"W"}, view);
-    MAKE_TOOL_ACT("Pen", {"D"}, pen);
-    MAKE_TOOL_ACT("Color Picker", {"Q"}, color_picker);
-    MAKE_TOOL_ACT("Flood Fill", {"F"}, fill);
-    MAKE_TOOL_ACT("Select", {"G"}, select);
-
-#undef MAKE_TOOL_ACT
+#define X(NAME, KEY)           \
+    KEY##_ = make_tool_action( \
+        tool_group_, NAME, settings_menu_->shortcut_##KEY(), ":/assets/icons/" #KEY ".png", tool::type::KEY);
+    X_TOOLS
+#undef X
 
     connect(tool_group_, &QActionGroup::triggered,
         [this](QAction *_act) { canv_->choose_tool(qvariant_cast<tool::type>(_act->data())); });

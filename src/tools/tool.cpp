@@ -23,16 +23,11 @@ tool *tool::make(tool::type _type)
 {
     switch (_type)
     {
-    case type::view:
-        return new view();
-    case type::pen:
-        return new pen();
-    case type::color_picker:
-        return new color_picker();
-    case type::fill:
-        return new fill();
-    case type::select:
-        return new select();
+#define X(NAME, KEY) \
+    case type::KEY:  \
+        return new KEY();
+        X_TOOLS
+#undef X
     default:
         throw std::runtime_error{"Unknown tool type"};
     }

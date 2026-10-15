@@ -105,6 +105,7 @@ int veles_main(int _argc, char **_argv)
     auto *const state_ = state::instance();
     state_->set_primary(Qt::white);
     state_->set_secondary(Qt::blue);
+    state_->refresh_recent_files();
 
     for (const auto &arg : QApplication::arguments())
         if (!arg.endsWith("veles"))
