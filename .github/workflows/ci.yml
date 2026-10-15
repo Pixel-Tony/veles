@@ -1,0 +1,69 @@
+on:
+  push:
+    branches: "master"
+
+jobs:
+  build-windows:
+    runs-on: "windows-latest"
+    steps:
+      - name: "Setup Cmake"
+        uses: "lukka/get-cmake@latest"
+
+      - name: "Checkout code"
+        uses: "actions/checkout@v7"
+
+      - name: "Install Qt"
+        uses: "jurplel/install-qt-action@v4.4.1"
+        with:
+          version: "~6.9.0"
+
+      - name: "Build the executable"
+        run: |
+          cmake -S . -B .\build
+          cmake --build .\build --config Release
+
+      - name: "Deploy"
+        run: "windeployqt.exe .\\build\\Release\\veles.exe"
+
+      - name: "Bundle"
+        uses: "actions/upload-artifact@v7"
+        with:
+          path: ".\\build\\Release"
+          name: "veles-win64"
+
+
+  # build:
+  #   runs-on: "${{ matrix.os }}"
+  #     matrix:
+  #       include:
+  #         - os: "windows-latest"
+  #           ext: ".exe"
+  #         - os: "macos-latest"
+  #           ext: ""
+  #         - os: "ubuntu-latest"
+  #           ext: ""
+
+  #   steps:
+  #     - name: "Setup Cmake"
+  #       uses: "lukka/get-cmake@latest"
+
+  #     - name: "Checkout code"
+  #       uses: "actions/checkout@v7"
+
+  #     - name: "Install Qt"
+  #       uses: "jurplel/install-qt-action@v4.4.1"
+  #       with:
+  #         version: "~6.9.0"
+  #         # setup-python: false
+  #         # use-official: false
+
+  #     - name: "Build the executable"
+  #       run: |
+  #         cmake -DCMAKE_BUILD_TYPE=Release -S . -B ./build
+  #         cmake --build ./build
+
+  #     - name: "Bundle"
+  #       uses: "actions/upload-artifact@v7"
+  #       with:
+  #         path: "./build/**/veles${{ matrix.ext }}"
+  #         name: "veles-${{ matrix.os }}${{ matrix.ext }}"
