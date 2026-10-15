@@ -6,7 +6,7 @@ project(veles
 set(CMAKE_AUTOMOC ON)
 set(CXX_INCLUDE_WHAT_YOU_USE "include-what-you-use")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGLWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network OpenGLWidgets)
 
 qt_standard_project_setup()
 qt_add_executable(veles-executable
@@ -82,7 +82,7 @@ set_target_properties(veles-executable PROPERTIES
 )
 
 target_include_directories(veles-executable PRIVATE src)
-target_link_libraries(veles-executable PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGLWidgets)
+target_link_libraries(veles-executable PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGLWidgets Qt6::Network)
 
 target_compile_options(veles-executable
   PRIVATE $<$<STREQUAL:CMAKE_CXX_COMPILER_ID,MSVC>:"/W4 /WX /permissive-">
