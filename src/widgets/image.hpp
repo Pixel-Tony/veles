@@ -31,6 +31,7 @@ public:
     void update_contents(const QImage &_source);
     void update_contents(QImage &_source) = delete;
     bool convert_palette(palette::type _type, bool _validate = true);
+    [[nodiscard]] QColor get_closest_acceptable(QColor _color) const noexcept;
 
     [[nodiscard]] QRect sprite_bounds(QPoint _pos) const noexcept;
 

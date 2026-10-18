@@ -105,4 +105,26 @@ const QString &palette::color_group(QColor _color) const noexcept
 }
 
 QColor palette::get(int _x, int _y) const noexcept { return contents_[_y * 16 + _x]; }
+
+QColor palette::closest(const QColor _color) const noexcept
+{
+    const auto dist = [](QColor _a, QColor _b)
+    {
+        const auto red = _a.red() - _b.red();
+        const auto green = _a.green() - _b.green();
+        const auto blue = _a.blue() - _b.blue();
+        return red * red + green * green + blue * blue;
+    };
+    QColor closest = contents_[0];
+    auto d_closest = 3 * 256 * 256;
+    for (QColor col : contents_)
+    {
+        if (const auto d = dist(col, _color); d < d_closest)
+        {
+            closest = col;
+            d_closest = d;
+        }
+    }
+    return closest;
+}
 } // namespace veles

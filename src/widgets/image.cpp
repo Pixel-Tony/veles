@@ -185,6 +185,13 @@ bool image::convert_palette(palette::type _type, bool _validate)
     return true;
 }
 
+QColor image::get_closest_acceptable(QColor _color) const noexcept
+{
+    if (palette_ && palette_->index(_color) == -1)
+        return palette_->closest(_color);
+    return _color;
+}
+
 QRect image::sprite_bounds(QPoint _pos) const noexcept
 {
     if (!contains(_pos))

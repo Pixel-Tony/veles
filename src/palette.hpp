@@ -31,6 +31,7 @@ public:
     [[nodiscard]] uint index(QColor _color) const noexcept;
     [[nodiscard]] const QString &color_group(QColor _color) const noexcept;
     [[nodiscard]] QColor get(int _x, int _y) const noexcept;
+    [[nodiscard]] QColor closest(QColor _color) const noexcept;
 
     const type type_;
     const QString name_;
