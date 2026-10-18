@@ -1,0 +1,76 @@
+on:
+  push:
+    branches: "master"
+
+jobs:
+  build:
+    name: "Build"
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: False
+      matrix:
+        include:
+          - runner: "windows-latest"
+            os: "win64"
+            path: "Release/Release"
+          - runner: "ubuntu-latest"
+            os: "linux"
+            path: "Release"
+          - runner: "macos-latest"
+            os: "macos"
+            path: "Release"
+    steps:
+      - name: "Setup Cmake"
+        uses: "lukka/get-cmake@latest"
+
+      - name: "Checkout code"
+        uses: "actions/checkout@v7"
+
+      - name: "Install Qt"
+        uses: "jurplel/install-qt-action@v4.4.1"
+        with:
+          version: "~6.9.0"
+
+      - name: "Build the executable"
+        run: |
+          cmake -S . -B ./build -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=Release
+          cmake --build ./build --config Release --parallel
+
+      - name: "Deploy (Windows)"
+        run: "windeployqt.exe ./build/Release/Release/veles.exe --no-translations"
+        if: ${{ matrix.runner == 'windows-latest' }}
+
+      - name: "Deploy (MacOS)"
+        run: "macdeployqt ./build/Release/veles.app"
+        if: ${{ matrix.runner == 'macos-latest' }}
+
+      - name: "Bundle"
+        uses: "actions/upload-artifact@v7"
+        with:
+          path: "./build/${{ matrix.path }}"
+          name: "veles-${{ matrix.os }}"
+
+  #   steps:
+  #     - name: "Setup Cmake"
+  #       uses: "lukka/get-cmake@latest"
+
+  #     - name: "Checkout code"
+  #       uses: "actions/checkout@v7"
+
+  #     - name: "Install Qt"
+  #       uses: "jurplel/install-qt-action@v4.4.1"
+  #       with:
+  #         version: "~6.9.0"
+  #         # setup-python: false
+  #         # use-official: false
+
+  #     - name: "Build the executable"
+  #       run: |
+  #         cmake -DCMAKE_BUILD_TYPE=Release -S . -B ./build
+  #         cmake --build ./build
+
+  #     - name: "Bundle"
+  #       uses: "actions/upload-artifact@v7"
+  #       with:
+  #         path: "./build/**/veles${{ matrix.ext }}"
+  #         name: "veles-${{ matrix.os }}${{ matrix.ext }}"

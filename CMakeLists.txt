@@ -81,10 +81,12 @@ endif()
 set_target_properties(veles-executable PROPERTIES
   CXX_STANDARD 20
   OUTPUT_NAME veles
+  MACOSX_BUNDLE TRUE
 )
 
 target_include_directories(veles-executable PRIVATE src)
 target_link_libraries(veles-executable PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGLWidgets Qt6::Network)
+
 
 target_compile_options(veles-executable
   PRIVATE $<$<STREQUAL:CMAKE_CXX_COMPILER_ID,MSVC>:"/W4 /WX /permissive-">
